@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "feedback": {
+      "title": "Feedback",
+      "description": "User feedback for generated prompts",
+      "type": "object",
+      "properties": {
+        "rating": {
+          "type": "number",
+          "description": "Quality rating from 1 to 5"
+        },
+        "suggestion": {
+          "type": "string",
+          "description": "User improvement suggestions"
+        },
+        "modelId": {
+          "type": "string",
+          "description": "ID of the model used to generate the prompt"
+        },
+        "goal": {
+          "type": "string",
+          "description": "The user's original goal"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the feedback"
+        },
+        "versionId": {
+          "type": "string",
+          "description": "ID of the specific history version being rated"
+        }
+      },
+      "required": ["rating", "modelId", "goal", "createdAt"]
+    },
+    "event": {
+      "title": "Analytics Event",
+      "description": "General analytics events tracking model usage and engagement",
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "enum": ["generation", "example_click", "copy", "revert", "delete_history"],
+          "description": "Type of event being tracked"
+        },
+        "modelId": {
+          "type": "string",
+          "description": "ID of the model involved (if any)"
+        },
+        "exampleId": {
+          "type": "string",
+          "description": "ID of the example prompt clicked (if any)"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the event occurred"
+        }
+      },
+      "required": ["eventType", "timestamp"]
+    },
+    "history": {
+      "title": "Prompt Version",
+      "description": "Historical record of a generated prompt for versioning",
+      "type": "object",
+      "properties": {
+        "goal": {
+          "type": "string",
+          "description": "The user's goal for this version"
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional context provided"
+        },
+        "modelId": {
+          "type": "string",
+          "description": "The model used for generation"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The generated architectural prompt"
+        },
+        "variables": {
+          "type": "object",
+          "description": "Map of variables used in the template"
+        },
+        "variableDescriptions": {
+          "type": "object",
+          "description": "Map of variable descriptions as provided by the user"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this version was created"
+        }
+      },
+      "required": ["goal", "modelId", "prompt", "timestamp"]
+    }
+  },
+  "firestore": {
+    "feedback/{feedbackId}": {
+      "schema": "feedback",
+      "description": "Collection of feedback documents"
+    },
+    "events/{eventId}": {
+      "schema": "event",
+      "description": "Collection of analytics events"
+    },
+    "history/{versionId}": {
+      "schema": "history",
+      "description": "Chronological history of all generated prompt structures"
+    }
+  }
+}

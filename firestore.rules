@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // Feedback validation
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['rating', 'modelId', 'goal', 'createdAt']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 6 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.modelId is string && data.modelId.size() <= 100 &&
+             data.goal is string && data.goal.size() <= 10000 &&
+             data.createdAt == request.time &&
+             (!('suggestion' in data) || (data.suggestion is string && data.suggestion.size() <= 2000)) &&
+             (!('versionId' in data) || (data.versionId is string || data.versionId == null));
+    }
+
+    match /feedback/{feedbackId} {
+      // Allow creation by anyone but NO reading or updating
+      allow create: if isValidId(feedbackId) && isValidFeedback(incoming());
+      allow read: if false; 
+    }
+
+    // Analytics Events validation
+    function isValidEvent(data) {
+      return data.keys().hasAll(['eventType', 'timestamp']) &&
+             data.keys().size() >= 2 && data.keys().size() <= 5 &&
+             data.eventType in ['generation', 'example_click', 'copy', 'revert', 'delete_history'] &&
+             data.timestamp == request.time &&
+             (!('modelId' in data) || (data.modelId is string)) &&
+             (!('exampleId' in data) || (data.exampleId is string)) &&
+             (!('id' in data) || (data.id is string));
+    }
+
+    match /events/{eventId} {
+      allow create: if isValidId(eventId) && isValidEvent(incoming());
+      allow read: if false;
+    }
+
+    // Version History validation
+    function isValidHistory(data) {
+      return data.keys().hasAll(['goal', 'modelId', 'prompt', 'timestamp']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 7 &&
+             data.goal is string && data.goal.size() <= 10000 &&
+             data.modelId is string &&
+             data.prompt is string && data.prompt.size() <= 100000 &&
+             data.timestamp == request.time &&
+             (!('context' in data) || (data.context is string && data.context.size() <= 5000)) &&
+             (!('variables' in data) || (data.variables is map)) &&
+             (!('variableDescriptions' in data) || (data.variableDescriptions is map));
+    }
+
+    match /history/{versionId} {
+      allow create: if isValidId(versionId) && isValidHistory(incoming());
+      allow read, list: if true;
+      allow delete: if true;
+    }
+  }
+}
